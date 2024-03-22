@@ -125,9 +125,8 @@ exports.userActivation = catchAsyncErron(async (req, res, next) => {
   });
   await newUser.save();
 
-  const { accesToken } = generateTokens(user);
+  const { accesToken } = generateTokens(newUser);
 
-  await user.save();
   user.password = "";
 
   const options = {
