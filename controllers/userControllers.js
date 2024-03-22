@@ -18,9 +18,9 @@ const moment = require("moment");
 
 // exports.homepage = catchAsyncErron((req, res, next) => {});
 
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("cloudinary");
 
-cloudinary.config({
+cloudinary.v2.config({
   cloud_name: "dcj2gzytt",
   api_key: process.env.CLOUDINARY_PUBLIC_KEY,
   api_secret: process.env.CLOUDINARY_SECRET_KEY,
@@ -28,6 +28,7 @@ cloudinary.config({
 
 const xlsx = require("xlsx");
 const fs = require("fs");
+const getDataUri = require("../middlewares/daraUri");
 
 exports.userRegistration = catchAsyncErron(async (req, res, next) => {
   const { name, email, password, contact, city, district, state, companyName } =
@@ -51,6 +52,7 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
     return next(new errorHandler("User With This Email Address Already Exits"));
 
   const ActivationCode = Math.floor(1000 + Math.random() * 9000);
+  console.log(ActivationCode)
 
   const user = {
     name,
@@ -256,7 +258,8 @@ exports.userAvatar = catchAsyncErron(async (req, res, next) => {
 
 exports.addSchool = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  console.log(req.body)
+  const file = req.file;
+
 
   const user = await User.findById(id);
 
@@ -276,13 +279,10 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   user.schools.push(currSchool._id);
   user.save();
   currSchool.user = user._id;
-  if (req.files.avatar) {
-    console.log("enter")
-    const filepath = req.files.avatar;
-    console.log("s")
-    const myavatar = await cloudinary.uploader.upload(filepath.tempFilePath, {
-      folder: "school",
-    });
+  if (file) {
+    const fileUri = getDataUri(file)
+
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
 
     console.log(myavatar)
 
@@ -307,10 +307,13 @@ exports.editSchool = catchAsyncErron(async (req, res, next) => {
     new: true,
   });
 
-  if (req?.files?.avatar) {
+  const file = req.file;
+
+  if (file) {
     const currentSchool = await School.findById(schoolId);
+
     if (currentSchool.logo.publicId !== "") {
-      await cloudinary.uploader.destroy(
+      await cloudinary.v2.uploader.destroy(
         currentSchool.logo.publicId,
         (error, result) => {
           if (error) {
@@ -322,17 +325,16 @@ exports.editSchool = catchAsyncErron(async (req, res, next) => {
       );
     }
 
-    const filepath = req.files.avatar;
-    const myavatar = await cloudinary.uploader.upload(filepath.tempFilePath, {
-      folder: "school",
-    });
+
+    const fileUri = getDataUri(file)
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
 
     currentSchool.logo = {
-      fileId: myavatar.public_id,
+      publicId: myavatar.public_id,
       url: myavatar.url,
     };
-
-    await currentSchool.save()
+    currentSchool.save();
 
     res.status(200).json({
       success: true,
@@ -404,6 +406,7 @@ exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
 
 exports.addStudent = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
+  const file = req.file;
 
   const user = await User.findById(id);
 
@@ -489,14 +492,17 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
 
   student.school = currSchool._id;
   student.user = id;
-  if (req?.files?.avatar) {
-    const filepath = req.files.avatar;
-    const myavatar = await cloudinary.uploader.upload(filepath.tempFilePath, {
-      folder: "student",
-    });
+
+  if (file) {
+    const fileUri = getDataUri(file)
+
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    console.log(myavatar)
+
     student.avatar = {
       publicId: myavatar.public_id,
-      url: myavatar.secure_url,
+      url: myavatar.url,
     };
   }
   student.save();
@@ -518,10 +524,14 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
     new: true,
   });
 
-  if (req?.files?.avatar) {
+
+
+  const file = req.file;
+
+  if (file) {
     const currStudent = await Student.findById(studentId);
     if (currStudent.avatar.publicId !== "") {
-      await cloudinary.uploader.destroy(
+      await cloudinary.v2.uploader.destroy(
         currStudent.avatar.publicId,
         (error, result) => {
           if (error) {
@@ -533,31 +543,24 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
       );
     }
 
-    const filepath = req.files.avatar;
-    const myavatar = await cloudinary.uploader.upload(filepath.tempFilePath, {
-      folder: "student",
-    });
+
+    const fileUri = getDataUri(file)
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
 
     currStudent.avatar = {
-      fileId: myavatar.public_id,
-      url: myavatar.secure_url,
+      publicId: myavatar.public_id,
+      url: myavatar.url,
     };
-
-    await currStudent.save()
+    currStudent.save();
 
     res.status(200).json({
       success: true,
-      message: "School updated successfully",
-      school: currStudent,
+      message: "Student updated successfully",
+      student: currStudent,
     });
   }
 
-  if (!updatedStudent) {
-    // If no student was found with the given ID, return an error response.
-    return next(
-      new errorHandler(`Student not found with id of ${studentId}`, 404)
-    );
-  }
 
   // Respond with the updated student information.
   res.status(200).json({

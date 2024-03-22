@@ -17,6 +17,7 @@ let sendmail = async (res , next , email, subject, template, data) =>{
         },
     });
 
+
     const templatePath = path.join(__dirname,"../mails",template);
 
     const html = await  ejs.renderFile(templatePath,data)
@@ -31,6 +32,7 @@ let sendmail = async (res , next , email, subject, template, data) =>{
     
     transport.sendMail(mailOption,(err,info) =>{
         if(err) return next(new errorHandler(err,500))
+        console.log("jo")
         return 
         // res.status(200).json({
         //     succcess: true,

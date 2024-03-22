@@ -24,11 +24,8 @@ const { ExcelUpload,
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
 
-const multer = require("multer");
-
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const updated = require("../middlewares/multer");
+const upload = require("../middlewares/multer");
 
 // const isAuthenticated = require("../middlewares/auth");
 
@@ -50,19 +47,19 @@ router.post("/updatepassword", isAuthenticated, updatePassword);
 
 router.post("/isactive/school/:id", isAuthenticated, ChangeActive);
 
-router.post("/registration/school",upload.single("avatar"), isAuthenticated ,addSchool);
+router.post("/registration/school",upload, isAuthenticated ,addSchool);
 
-router.post("/avatar",upload.single("avatar"), isAuthenticated ,userAvatar);
+router.post("/avatar",upload, isAuthenticated ,userAvatar);
 
-router.post("/edit/school/:id", isAuthenticated ,editSchool);
+router.post("/edit/school/:id",upload, isAuthenticated ,editSchool);
 
 router.post("/delete/school/:id", isAuthenticated ,deleteSchool);
 
 router.post("/students/:id", isAuthenticated ,getAllStudentsInSchool);
 
-router.post("/registration/student/:id", isAuthenticated ,addStudent);
+router.post("/registration/student/:id", upload, isAuthenticated ,addStudent);
 
-router.post("/edit/student/:id", isAuthenticated ,editStudent);
+router.post("/edit/student/:id", upload, isAuthenticated ,editStudent);
 
 router.post("/delete/student/:id", isAuthenticated ,deleteStudent);
 
@@ -73,6 +70,8 @@ router.post("/student/change-status/readyto/:id", isAuthenticated ,updateStudent
 router.post("/student/change-status/pending/:id", isAuthenticated ,updateStudentStatusToPending);
 
 router.post("/student/change-status/printed/:id", isAuthenticated ,updateStudentStatusToPrinted);
+
+router.post("/students/delete/:id", isAuthenticated ,deleteStudents);
 
 router.post("/studentlist/excel/:id", isAuthenticated ,studentListExcel);
 
