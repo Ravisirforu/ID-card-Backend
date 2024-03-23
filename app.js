@@ -12,7 +12,7 @@ connectDb.databaseConnect();
 
 // body parser
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 const cookieParser = require("cookie-parser");
 
 //loger
