@@ -6,7 +6,8 @@ const errorHandler = require("../utils/errorHandler");
 const isAuthenticated = catchAsyncErron(async(req,res,next) =>{
     try {
         console.log(req.cookies.Token)
-        const token = req.cookies?.Token || req.header("Authorization");
+        const token = req.header("Authorization");
+      
        
         // Ckeck if Token Exit in req or header
         if(!token){
