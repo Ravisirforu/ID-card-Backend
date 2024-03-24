@@ -85,6 +85,7 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
     res.status(200).cookie("token", token, options).json({
       succcess: true,
       message: "successfully send mail pleas check your Mail",
+      Token: token
     });
   } catch (error) {
     return next(new errorHandler(error.message, 400));
@@ -101,6 +102,8 @@ exports.userActivation = catchAsyncErron(async (req, res, next) => {
     token,
     process.env.ACCESS_TOKEN_SECRET
   );
+
+  if(!user) return next(new errorHandler("Invelide Token"));
 
   const isEmailExit = await User.findOne({ email: user.email });
   if (isEmailExit)
