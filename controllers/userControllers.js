@@ -52,7 +52,7 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
     return next(new errorHandler("User With This Email Address Already Exits"));
 
   const ActivationCode = Math.floor(1000 + Math.random() * 9000);
-  console.log(ActivationCode)
+  console.log(ActivationCode);
 
   const user = {
     name,
@@ -85,7 +85,47 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
     res.status(200).cookie("token", token, options).json({
       succcess: true,
       message: "successfully send mail pleas check your Mail",
-      Token: token
+      Token: token,
+    });
+  } catch (error) {
+    return next(new errorHandler(error.message, 400));
+  }
+});
+
+exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) return next(new errorHandler(`pls provide email`));
+
+  const user = await User.findOne({ email: email });
+  if (!user)
+    return next(
+      new errorHandler("User With This Email Address Not Found", 404)
+    );
+
+  const url = `${process.env.FROENTEND_URI}/user/studentForgetLink/${user._id}`;
+
+  const data = { name: user.name , url: url };
+
+  try {
+    await sendmail(
+      res,
+      next,
+      email,
+      "Verification code",
+      "activationMail.ejs",
+      data
+    );
+    console.log("extracted");
+    let token = await activationToken(user, ActivationCode);
+    let options = {
+      httpOnly: true,
+      secure: true,
+    };
+    res.status(200).cookie("token", token, options).json({
+      succcess: true,
+      message: "successfully send mail pleas check your Mail",
+      Token: token,
     });
   } catch (error) {
     return next(new errorHandler(error.message, 400));
@@ -103,7 +143,7 @@ exports.userActivation = catchAsyncErron(async (req, res, next) => {
     process.env.ACCESS_TOKEN_SECRET
   );
 
-  if(!user) return next(new errorHandler("Invelide Token"));
+  if (!user) return next(new errorHandler("Invelide Token"));
 
   const isEmailExit = await User.findOne({ email: user.email });
   if (isEmailExit)
@@ -251,21 +291,20 @@ exports.userLongOut = catchAsyncErron(async (req, res, next) => {
 exports.userAvatar = catchAsyncErron(async (req, res, next) => {
   const file = req.file;
 
-    if (!file) {
-      return res.status(400).send("No file uploaded.");
-    }
-    const files = req.file.path;
-    console.log(files)
+  if (!file) {
+    return res.status(400).send("No file uploaded.");
+  }
+  const files = req.file.path;
+  console.log(files);
 });
 
 exports.addSchool = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
   const file = req.file;
 
-
   const user = await User.findById(id);
 
-  const { name, email, contact, password } = req.body;
+  let { name, email, contact, password, requiredFields } = req.body;
 
   if (!name) return next(new errorHandler("School name is Required"));
 
@@ -276,17 +315,35 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   if (!password) return next(new errorHandler("Password is Required"));
 
   const currSchool = await School.create(req.body);
-  console.log(currSchool)
+  
+  if (typeof requiredFields === "string") {
+    try {
+      requiredFields = JSON.parse(`[${requiredFields}]`);
+    } catch (error) {
+      // If JSON.parse fails, split the string by commas and manually remove quotes
+      requiredFields = requiredFields
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+  
+  // Transform requiredFields array into array of objects
+  const requiredFieldsObjects = requiredFields.map(field => ({ [field]: true }));
+
+  currSchool.requiredFields = requiredFieldsObjects;
+  await currSchool.save()
+
+ 
 
   user.schools.push(currSchool._id);
   user.save();
   currSchool.user = user._id;
   if (file) {
-    const fileUri = getDataUri(file)
+    const fileUri = getDataUri(file);
 
     const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
 
-    console.log(myavatar)
+    console.log(myavatar);
 
     currSchool.logo = {
       publicId: myavatar.public_id,
@@ -296,7 +353,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   currSchool.save();
 
   res.status(200).json({
-    succcess: true, 
+    succcess: true,
     message: "successfully Register",
     user: user,
     school: currSchool,
@@ -327,10 +384,8 @@ exports.editSchool = catchAsyncErron(async (req, res, next) => {
       );
     }
 
-
-    const fileUri = getDataUri(file)
+    const fileUri = getDataUri(file);
     const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
-
 
     currentSchool.logo = {
       publicId: myavatar.public_id,
@@ -353,8 +408,6 @@ exports.editSchool = catchAsyncErron(async (req, res, next) => {
     school: updatedSchool,
   });
 });
-
-
 
 exports.deleteSchool = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id; // The ID of the school to delete
@@ -379,8 +432,6 @@ exports.deleteSchool = catchAsyncErron(async (req, res, next) => {
     school: school,
   });
 });
-
-
 
 exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id; // The ID of the school to delete
@@ -496,11 +547,11 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
   student.user = id;
 
   if (file) {
-    const fileUri = getDataUri(file)
+    const fileUri = getDataUri(file);
 
     const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
 
-    console.log(myavatar)
+    console.log(myavatar);
 
     student.avatar = {
       publicId: myavatar.public_id,
@@ -526,8 +577,6 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
     new: true,
   });
 
-
-
   const file = req.file;
 
   if (file) {
@@ -545,10 +594,8 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
       );
     }
 
-
-    const fileUri = getDataUri(file)
+    const fileUri = getDataUri(file);
     const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
-
 
     currStudent.avatar = {
       publicId: myavatar.public_id,
@@ -563,7 +610,6 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
     });
   }
 
-
   // Respond with the updated student information.
   res.status(200).json({
     success: true,
@@ -572,10 +618,9 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-
 exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  const studentId = req.params.id
+  const studentId = req.params.id;
   const student = await Student.findById(studentId);
   if (student.avatar.publicId !== "") {
     await cloudinary.uploader.destroy(
@@ -589,24 +634,25 @@ exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
       }
     );
   }
-  const studentAvatar = await cloudinary.uploader.upload(filepath.tempFilePath, {
-    folder: "school",
-  });
-  
+  const studentAvatar = await cloudinary.uploader.upload(
+    filepath.tempFilePath,
+    {
+      folder: "school",
+    }
+  );
+
   student.logo = {
     fileId: studentAvatar.public_id,
     url: studentAvatar.secure_url,
   };
 
-  await student.save()
+  await student.save();
 
   res.status(200).json({
     success: true,
     message: "Student Avatar Update successfully",
     school: student,
   });
-
-
 });
 
 exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
@@ -626,6 +672,20 @@ exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Student deleted successfully",
+  });
+});
+
+exports.allSchool = catchAsyncErron(async (req, res, next) => {
+  const id = req.id; // Assuming the student ID is in the URL.
+
+  // Attempt to find the student by ID and delete it.
+  const schools = await School.find({user:id});
+
+
+  // Respond with a success message indicating the student was deleted.
+  res.status(200).json({
+    success: true,
+    schools
   });
 });
 
@@ -1049,7 +1109,7 @@ exports.SerchSchool = catchAsyncErron(async (req, res, next) => {
   try {
     const id = req.id;
     const searchQuery = req.query.q; // Get search query from URL query parameters
-    console.log(searchQuery)
+    console.log(searchQuery);
 
     const jobs = await searchSchool(searchQuery, id);
     res.json(jobs);
@@ -1060,7 +1120,7 @@ exports.SerchSchool = catchAsyncErron(async (req, res, next) => {
 
   async function searchSchool(query, location) {
     const searchRegex = new RegExp(query, "i"); // 'i' for case-insensitive
-    console.log("call")
+    console.log("call");
     const queryObj = {
       name: { $regex: searchRegex },
       user: req.id,
@@ -1141,18 +1201,17 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
       weeklyCountsStrudent.push(count);
     }
 
-    const schoolCount = await School.countDocuments({user:req.id}) 
+    const schoolCount = await School.countDocuments({ user: req.id });
 
-    const studntCount = await Student.countDocuments({user:req.id}) 
-
+    const studntCount = await Student.countDocuments({ user: req.id });
 
     // Format the data for the bar chart
     const barChartData = {
       labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
       school: weeklyCounts,
-      student:weeklyCountsStrudent,
+      student: weeklyCountsStrudent,
       schoolCount: schoolCount,
-      studentCount: studntCount
+      studentCount: studntCount,
     };
 
     // Send the formatted data as a response to the user

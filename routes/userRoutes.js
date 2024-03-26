@@ -20,7 +20,8 @@ const { ExcelUpload,
     updatePassword,
     userAvatar,
     ChangeActive,
-    SerchSchool} = require("../controllers/userControllers");
+    SerchSchool,
+    allSchool} = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
 
@@ -48,6 +49,8 @@ router.post("/updatepassword", isAuthenticated, updatePassword);
 router.post("/isactive/school/:id", isAuthenticated, ChangeActive);
 
 router.post("/registration/school",upload, isAuthenticated ,addSchool);
+
+router.post("/schools", isAuthenticated ,allSchool);
 
 router.post("/avatar",upload, isAuthenticated ,userAvatar);
 
