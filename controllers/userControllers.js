@@ -387,9 +387,9 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   }
   
   // Transform requiredFields array into array of objects
-  const requiredFieldsObjects = requiredFields.map(field => ({ [field]: true }));
+  // const requiredFieldsObjects = requiredFields.map(field => ({ [field]: true }));
 
-  currSchool.requiredFields = requiredFieldsObjects;
+  currSchool.requiredFields = requiredFields;
   await currSchool.save()
 
  
@@ -1186,6 +1186,21 @@ exports.SerchSchool = catchAsyncErron(async (req, res, next) => {
     };
 
     return School.find(queryObj);
+  }
+});
+
+exports.SchoolrequiredFields = catchAsyncErron(async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    const school = await School.findById(id);
+    if(!school) return next(new errorHandler("School Not Found",401))
+
+    res.json({requiredFields:school.requiredFields});
+
+  } catch (error) {
+    console.error("Error in SearchJobs route:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 });
 
