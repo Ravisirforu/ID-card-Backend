@@ -95,29 +95,33 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
 exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
   const { email } = req.body;
 
-  if (!email) return next(new errorHandler(`pls provide email`));
+  if (!email) return next(new errorHandler(`pleas provide email`));
 
   const user = await User.findOne({ email: email });
-  if (!user)
-    return next(
+
+  if (!user) return next(
       new errorHandler("User With This Email Address Not Found", 404)
-    );
+  );
 
-  const url = `${process.env.FROENTEND_URI}/user/studentForgetLink/${user._id}`;
+  const ActivationCode = Math.floor(1000 + Math.random() * 9000);
+  
 
-  const data = { name: user.name , url: url };
+  const data = { name: user.name , activationCode: ActivationCode  };
+
+  user.resetpasswordToken = 1;
+  user.save()
 
   try {
     await sendmail(
       res,
       next,
       email,
-      "Verification code",
-      "activationMail.ejs",
+      "Password Reset code",
+      "forgetpassword.ejs",
       data
     );
-    console.log("extracted");
     let token = await activationToken(user, ActivationCode);
+   
     let options = {
       httpOnly: true,
       secure: true,
@@ -132,12 +136,67 @@ exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
   }
 });
 
+exports.userForgetPasswordVerify = catchAsyncErron(async (req, res, next) => {
+  let { activationCode, password } = req.body;
+
+  if (!activationCode) return next(new errorHandler("Provide Reset Password Code"));
+
+  const token = req.header("Authorization");
+
+  if(!token) return next(new errorHandler("please provide token",401));
+  
+  const { user, ActivationCode } = await jwt.verify(
+    token,
+    process.env.ACCESS_TOKEN_SECRET
+  );
+  console.log(user)
+
+  if (!user) return next(new errorHandler("Invelide Token"));
+
+  const currUser = await User.findById(user._id).select("+password").exec();
+  console.log(currUser)
+
+  if (!currUser)
+    return next(new errorHandler("User not Found"));
+
+  if (activationCode != ActivationCode)
+    return next(new errorHandler("Wrong Activation Code"));
+  if(currUser.resetpasswordToken == 0) return next(new errorHandler("You alredy used this Code"));
+
+  const currentuser = await User.findByIdAndUpdate(currUser,{password:password, resetpasswordToken:0}, {
+    new: true,
+  });
+ 
+  // currUser.resetpasswordToken = 0
+  // currUser.save();
+  // currUser.password = ""
+  
+
+
+  const { accesToken } = generateTokens(currentuser);
+
+  currUser.password = "";
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  };
+
+  res.status(201).cookie("Token", accesToken, options).json({
+    succcess: true,
+    message: "successfully update password",
+    user: currentuser,
+    token: accesToken,
+  });
+});
+
 exports.userActivation = catchAsyncErron(async (req, res, next) => {
   let { activationCode } = req.body;
 
   if (!activationCode) return next(new errorHandler("Provide Activation Code"));
 
-  const { token } = req.cookies;
+  const token = req.header("Authorization");
   const { user, ActivationCode } = await jwt.verify(
     token,
     process.env.ACCESS_TOKEN_SECRET

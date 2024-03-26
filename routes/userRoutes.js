@@ -21,7 +21,9 @@ const { ExcelUpload,
     userAvatar,
     ChangeActive,
     SerchSchool,
-    allSchool} = require("../controllers/userControllers");
+    allSchool,
+    userForgetPasswordVerify,
+    userForgetPasswordsendMail} = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
 
@@ -39,6 +41,10 @@ router.post("/registration",userRegistration);
 router.post("/activate/user",userActivation);
 
 router.post("/login",userLogin);
+
+router.post("/forgetpassword/email",userForgetPasswordsendMail);
+
+router.post("/forgetpassword/code",userForgetPasswordVerify);
 
 router.post("/edit", isAuthenticated, EditUser);
 

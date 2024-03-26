@@ -43,8 +43,6 @@ const schoolModel = mongoose.Schema(
 		},
 		code:{
 			type:Number,
-			minLength: [6, 'Constact must not be exceed of 6 Numbers'],
-			maxLength: [6, 'Constact must be atleast of 6 Numbers'],
 
 		},
 		isActive: {
