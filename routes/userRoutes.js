@@ -89,7 +89,6 @@ router.post("/studentlist/excel/:id", isAuthenticated ,studentListExcel);
 
 router.post("/bar-chart", isAuthenticated ,GraphData);
 
-router.post("/bar-chart", isAuthenticated ,GraphData);
 
 
 // router.post("/registration/student/:id", isAuthenticated ,addStudent);
