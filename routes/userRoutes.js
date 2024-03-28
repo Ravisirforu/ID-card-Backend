@@ -44,7 +44,7 @@ router.post("/activate/user",userActivation);
 
 router.post("/login",userLogin);
 
-router.post("/profile",isAuthenticated, userProfile);
+router.get("/profile",isAuthenticated, userProfile);
 
 router.post("/forgetpassword/email",userForgetPasswordsendMail);
 
