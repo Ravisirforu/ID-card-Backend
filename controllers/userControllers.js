@@ -403,8 +403,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   currSchool.requiredFields = requiredFields;
   await currSchool.save()
 
- 
-
+  console.log(user)
   user.schools.push(currSchool._id);
   user.save();
   currSchool.user = user._id;
@@ -751,11 +750,41 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
   // Attempt to find the student by ID and delete it.
   const schools = await School.find({user:id});
 
+  // Prepare an array to store modified school data with student count.
+  const modifiedSchools = [];
+
+  // Iterate through each school to find the count of students in it.
+  for (const school of schools) {
+    // Find the count of students belonging to the current school.
+    const studentCount = await Student.countDocuments({ school: school._id });
+
+    // Create a modified school object with the student count.
+    const modifiedSchool = {
+      _id: school._id,
+      name: school.name,
+      email: school.email,
+      contact: school.contact,
+      address: school.address,
+      logo: school.logo,
+      code: school.code,
+      requiredFields: school.requiredFields,
+
+      // Add other school properties as needed.
+      studentCount: studentCount,
+      isActive: school.isActive
+    };
+
+    // Push the modified school object into the array.
+    modifiedSchools.push(modifiedSchool);
+  
+  }
+  console.log(modifiedSchools)
+
 
   // Respond with a success message indicating the student was deleted.
   res.status(200).json({
     success: true,
-    schools
+    schools:modifiedSchools
   });
 });
 
@@ -1207,7 +1236,10 @@ exports.SchoolrequiredFields = catchAsyncErron(async (req, res, next) => {
     const school = await School.findById(id);
     if(!school) return next(new errorHandler("School Not Found",401))
 
-    res.json({requiredFields:school.requiredFields});
+    const requiredFieldsString = school.requiredFields.join(', ');
+
+
+    res.json({requiredFields:requiredFieldsString });
 
   } catch (error) {
     console.error("Error in SearchJobs route:", error);
