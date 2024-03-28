@@ -192,6 +192,26 @@ exports.userForgetPasswordVerify = catchAsyncErron(async (req, res, next) => {
 });
 
 exports.userActivation = catchAsyncErron(async (req, res, next) => {
+
+  res.status(201).cookie("Token", accesToken, options).json({
+    succcess: true,
+    message: "successfully register",
+    user: user,
+    token: accesToken,
+  });
+});
+
+exports.userProfile = catchAsyncErron(async (req, res, next) => {
+  const id = req.id
+
+  const user = await User.findById(id)
+  res.status(200).json({
+    succcess: true,
+    user: user,
+  });
+});
+
+exports.userActivation = catchAsyncErron(async (req, res, next) => {
   let { activationCode } = req.body;
 
   if (!activationCode) return next(new errorHandler("Provide Activation Code"));
@@ -1213,6 +1233,7 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
     year = currentDate.format("YYYY"); // Extract current year
     month = currentDate.format("MM"); // Extract current month
   }
+  
 
   // Parse the year and month provided by the user
   const selectedDate = moment(`${year}-${month}`, "YYYY-MM");
