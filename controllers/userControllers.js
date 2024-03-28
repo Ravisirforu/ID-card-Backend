@@ -191,15 +191,6 @@ exports.userForgetPasswordVerify = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-exports.userActivation = catchAsyncErron(async (req, res, next) => {
-
-  res.status(201).cookie("Token", accesToken, options).json({
-    succcess: true,
-    message: "successfully register",
-    user: user,
-    token: accesToken,
-  });
-});
 
 exports.userProfile = catchAsyncErron(async (req, res, next) => {
   const id = req.id
