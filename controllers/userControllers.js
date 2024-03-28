@@ -768,6 +768,8 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       logo: school.logo,
       code: school.code,
       requiredFields: school.requiredFields,
+      createdAt:school.createdAt,
+
 
       // Add other school properties as needed.
       studentCount: studentCount,
@@ -777,9 +779,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
     // Push the modified school object into the array.
     modifiedSchools.push(modifiedSchool);
   
-  }
-  console.log(modifiedSchools)
-
+  } 
 
   // Respond with a success message indicating the student was deleted.
   res.status(200).json({
