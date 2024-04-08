@@ -373,7 +373,12 @@ exports.userAvatar = catchAsyncErron(async (req, res, next) => {
 
 exports.addSchool = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
+<<<<<<< HEAD
   const file = req.files[0];
+=======
+  const file = req.file;
+  console.log(file)
+>>>>>>> 747cc12aa4a8edf5381b29f7a3f309d0fc1109ac
 
   const user = await User.findById(id);
 
