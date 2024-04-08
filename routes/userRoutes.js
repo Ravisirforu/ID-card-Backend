@@ -25,7 +25,8 @@ const { ExcelUpload,
     userForgetPasswordVerify,
     userForgetPasswordsendMail,
     SchoolrequiredFields,
-    userProfile} = require("../controllers/userControllers");
+    userProfile,
+    StudentsAvatars} = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
 
@@ -76,6 +77,8 @@ router.post("/registration/student/:id", upload, isAuthenticated ,addStudent);
 
 router.post("/edit/student/:id", upload, isAuthenticated ,editStudent);
 
+router.post("/student/avatars/:id", upload, isAuthenticated , StudentsAvatars);
+
 router.post("/delete/student/:id", isAuthenticated ,deleteStudent);
 
 router.post("/school/search", isAuthenticated ,SerchSchool);
@@ -92,9 +95,7 @@ router.post("/studentlist/excel/:id", isAuthenticated ,studentListExcel);
 
 router.post("/bar-chart", isAuthenticated ,GraphData);
 
-
-
-// router.post("/registration/student/:id", isAuthenticated ,addStudent);
+// router.post("student/avatars", upload , isAuthenticated ,StudentsAvatars);
 
 // router.get("/logout",isAuthenticated, userLongOut);
 

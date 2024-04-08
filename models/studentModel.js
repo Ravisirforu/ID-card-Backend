@@ -50,6 +50,7 @@ const studentModel = mongoose.Schema(
 		aadharNo: String,
 		ribbionColour: String,
 		routeNo: String,
+		photoName: String,
 		school: { type: mongoose.Schema.Types.ObjectId, ref: 'school' },
 		user: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
 		status:{

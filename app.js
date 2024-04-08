@@ -324,17 +324,17 @@ app.post(
   upload,
   isAuthenticated,
   async (req, res) => {
-    const file = req.file;
+    const file = req.files[0];
 
     if (!file) {
       return res.status(400).send("No file uploaded.");
     }
-    const files = req.file.path;
+    const files = req.files[0].path;
 
     const schoolID = req.params.id;
     const school = await School.findById(schoolID);
 
-    const rows = await readXlsxFile(req.file.buffer);
+    const rows = await readXlsxFile(req.files[0].buffer);
 
     if (rows.length < 2) {
       return res.status(400).send("Excel file does not contain data.");
@@ -361,6 +361,7 @@ app.post(
       routeNo: newheader.indexOf("ROUTE NO./TRANSPORT"),
       address: newheader.indexOf("ADDRESS"),
       riddionColor: newheader.indexOf("RIBBION COLOUR"),
+      photoName: newheader.indexOf("PHOTO NO."),
     };
 
     if (columnIndex.dob === -1) {
@@ -391,6 +392,7 @@ app.post(
       studentID: row[columnIndex.studentId],
       aadharNo: row[columnIndex.adharNo],
       routeNo: row[columnIndex.routeNo],
+      photoName:row[columnIndex.photoName],
       school: schoolID,
     }));
 

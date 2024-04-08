@@ -13,6 +13,7 @@ const school = require("../models/schoolModel");
 const student = require("../models/studentModel");
 const generateTokens = require("../utils/generateTokens");
 const moment = require("moment");
+const path = require("path");
 // const generateTokens = require("../utils/generateTokens");
 // // const cloudinary = require("cloudinary").v2;
 
@@ -29,6 +30,7 @@ cloudinary.v2.config({
 const xlsx = require("xlsx");
 const fs = require("fs");
 const getDataUri = require("../middlewares/daraUri");
+const { log } = require("console");
 
 exports.userRegistration = catchAsyncErron(async (req, res, next) => {
   const { name, email, password, contact, city, district, state, companyName } =
@@ -52,7 +54,6 @@ exports.userRegistration = catchAsyncErron(async (req, res, next) => {
     return next(new errorHandler("User With This Email Address Already Exits"));
 
   const ActivationCode = Math.floor(1000 + Math.random() * 9000);
-  console.log(ActivationCode);
 
   const user = {
     name,
@@ -99,17 +100,17 @@ exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
 
   const user = await User.findOne({ email: email });
 
-  if (!user) return next(
+  if (!user)
+    return next(
       new errorHandler("User With This Email Address Not Found", 404)
-  );
+    );
 
   const ActivationCode = Math.floor(1000 + Math.random() * 9000);
-  
 
-  const data = { name: user.name , activationCode: ActivationCode  };
+  const data = { name: user.name, activationCode: ActivationCode };
 
   user.resetpasswordToken = 1;
-  user.save()
+  user.save();
 
   try {
     await sendmail(
@@ -121,7 +122,7 @@ exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
       data
     );
     let token = await activationToken(user, ActivationCode);
-   
+
     let options = {
       httpOnly: true,
       secure: true,
@@ -139,39 +140,42 @@ exports.userForgetPasswordsendMail = catchAsyncErron(async (req, res, next) => {
 exports.userForgetPasswordVerify = catchAsyncErron(async (req, res, next) => {
   let { activationCode, password } = req.body;
 
-  if (!activationCode) return next(new errorHandler("Provide Reset Password Code"));
+  if (!activationCode)
+    return next(new errorHandler("Provide Reset Password Code"));
 
   const token = req.header("Authorization");
 
-  if(!token) return next(new errorHandler("please provide token",401));
-  
+  if (!token) return next(new errorHandler("please provide token", 401));
+
   const { user, ActivationCode } = await jwt.verify(
     token,
     process.env.ACCESS_TOKEN_SECRET
   );
-  console.log(user)
+  console.log(user);
 
   if (!user) return next(new errorHandler("Invelide Token"));
 
   const currUser = await User.findById(user._id).select("+password").exec();
-  console.log(currUser)
+  console.log(currUser);
 
-  if (!currUser)
-    return next(new errorHandler("User not Found"));
+  if (!currUser) return next(new errorHandler("User not Found"));
 
   if (activationCode != ActivationCode)
     return next(new errorHandler("Wrong Activation Code"));
-  if(currUser.resetpasswordToken == 0) return next(new errorHandler("You alredy used this Code"));
+  if (currUser.resetpasswordToken == 0)
+    return next(new errorHandler("You alredy used this Code"));
 
-  const currentuser = await User.findByIdAndUpdate(currUser,{password:password, resetpasswordToken:0}, {
-    new: true,
-  });
- 
+  const currentuser = await User.findByIdAndUpdate(
+    currUser,
+    { password: password, resetpasswordToken: 0 },
+    {
+      new: true,
+    }
+  );
+
   // currUser.resetpasswordToken = 0
   // currUser.save();
   // currUser.password = ""
-  
-
 
   const { accesToken } = generateTokens(currentuser);
 
@@ -191,11 +195,10 @@ exports.userForgetPasswordVerify = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-
 exports.userProfile = catchAsyncErron(async (req, res, next) => {
-  const id = req.id
+  const id = req.id;
 
-  const user = await User.findById(id)
+  const user = await User.findById(id);
   res.status(200).json({
     succcess: true,
     user: user,
@@ -370,7 +373,7 @@ exports.userAvatar = catchAsyncErron(async (req, res, next) => {
 
 exports.addSchool = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  const file = req.file;
+  const file = req.files[0];
 
   const user = await User.findById(id);
 
@@ -385,7 +388,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
   if (!password) return next(new errorHandler("Password is Required"));
 
   const currSchool = await School.create(req.body);
-  
+
   if (typeof requiredFields === "string") {
     try {
       requiredFields = JSON.parse(`[${requiredFields}]`);
@@ -396,14 +399,14 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
         .map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
-  
+
   // Transform requiredFields array into array of objects
   // const requiredFieldsObjects = requiredFields.map(field => ({ [field]: true }));
 
   currSchool.requiredFields = requiredFields;
-  await currSchool.save()
+  await currSchool.save();
 
-  console.log(user)
+  console.log(user);
   user.schools.push(currSchool._id);
   user.save();
   currSchool.user = user._id;
@@ -431,11 +434,14 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
 
 exports.editSchool = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
+  console.log(req.params);
+  console.log(req.body);
   const updatedSchool = await School.findByIdAndUpdate(schoolId, req.body, {
     new: true,
   });
+  console.log(updatedSchool);
 
-  const file = req.file;
+  const file = req.files[0];
 
   if (file) {
     const currentSchool = await School.findById(schoolId);
@@ -528,7 +534,7 @@ exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
 
 exports.addStudent = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  const file = req.file;
+  const file = req.files[0];
 
   const user = await User.findById(id);
 
@@ -646,7 +652,7 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
     new: true,
   });
 
-  const file = req.file;
+  const file = req.files[0];
 
   if (file) {
     const currStudent = await Student.findById(studentId);
@@ -748,7 +754,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
   const id = req.id; // Assuming the student ID is in the URL.
 
   // Attempt to find the student by ID and delete it.
-  const schools = await School.find({user:id});
+  const schools = await School.find({ user: id });
 
   // Prepare an array to store modified school data with student count.
   const modifiedSchools = [];
@@ -768,23 +774,21 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       logo: school.logo,
       code: school.code,
       requiredFields: school.requiredFields,
-      createdAt:school.createdAt,
-
+      createdAt: school.createdAt,
 
       // Add other school properties as needed.
       studentCount: studentCount,
-      isActive: school.isActive
+      isActive: school.isActive,
     };
 
     // Push the modified school object into the array.
     modifiedSchools.push(modifiedSchool);
-  
-  } 
+  }
 
   // Respond with a success message indicating the student was deleted.
   res.status(200).json({
     success: true,
-    schools:modifiedSchools
+    schools: modifiedSchools,
   });
 });
 
@@ -1234,13 +1238,11 @@ exports.SchoolrequiredFields = catchAsyncErron(async (req, res, next) => {
     const id = req.params.id;
 
     const school = await School.findById(id);
-    if(!school) return next(new errorHandler("School Not Found",401))
+    if (!school) return next(new errorHandler("School Not Found", 401));
 
-    const requiredFieldsString = school.requiredFields.join(', ');
+    const requiredFieldsString = school.requiredFields.join(", ");
 
-
-    res.json({requiredFields:requiredFieldsString });
-
+    res.json({ requiredFields: requiredFieldsString });
   } catch (error) {
     console.error("Error in SearchJobs route:", error);
     res.status(500).json({ success: false, error: "Internal Server Error" });
@@ -1256,7 +1258,6 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
     year = currentDate.format("YYYY"); // Extract current year
     month = currentDate.format("MM"); // Extract current month
   }
-  
 
   // Parse the year and month provided by the user
   const selectedDate = moment(`${year}-${month}`, "YYYY-MM");
@@ -1338,4 +1339,101 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
     console.error("Error fetching school registration data:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
+//   const studentId = req.params.id;
+
+//   const school = await Student.findById(studentId);
+
+//   const files = req.files;
+//   const students = await files.map(async (file) => {
+//     const fileName = path.parse(file.originalname).name;
+//     console.log(fileName);
+//     const currStudent = await Student.findOne({
+//       school: studentId,
+//       photoName: fileName,
+//     });
+//     console.log(currStudent);
+//     if (currStudent) {
+//       if (currStudent.avatar.publicId !== "") {
+//         await cloudinary.v2.uploader.destroy(
+//           currStudent.avatar.publicId,
+//           (error, result) => {
+//             if (error) {
+//               console.error("Error deleting file from Cloudinary:", error);
+//             } else {
+//               console.log("File deleted successfully:", result);
+//             }
+//           }
+//         );
+//       }
+//       const fileUri = getDataUri(file);
+//       const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+//       currStudent.avatar = {
+//         publicId: myavatar.public_id,
+//         url: myavatar.url,
+//       };
+//       await currStudent.save();
+//       console.log(currStudent)
+//       return currStudent;
+//     }
+//   });
+//   console.log(students)
+//   // Respond with the updated student information.
+//   res.status(200).json({
+//     success: true,
+//     message: "send photos",
+//     students
+//   });
+// });
+
+
+exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
+  const studentId = req.params.id;
+
+  const school = await Student.findById(studentId);
+
+  const files = req.files;
+  const students = await Promise.all(files.map(async (file) => {
+    const fileName = path.parse(file.originalname).name;
+    console.log(fileName);
+    const currStudent = await Student.findOne({
+      school: studentId,
+      photoName: fileName,
+    });
+    console.log(currStudent);
+    if (currStudent) {
+      if (currStudent.avatar.publicId !== "") {
+        await cloudinary.v2.uploader.destroy(
+          currStudent.avatar.publicId,
+          (error, result) => {
+            if (error) {
+              console.error("Error deleting file from Cloudinary:", error);
+            } else {
+              console.log("File deleted successfully:", result);
+            }
+          }
+        );
+      }
+      const fileUri = getDataUri(file);
+      const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+      currStudent.avatar = {
+        publicId: myavatar.public_id,
+        url: myavatar.url,
+      };
+      await currStudent.save();
+      console.log(currStudent)
+      return currStudent;
+    }
+  }));
+  console.log(students)
+  // Respond with the updated student information.
+  res.status(200).json({
+    success: true,
+    message: "send photos",
+    students
+  });
 });
