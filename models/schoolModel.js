@@ -19,7 +19,7 @@ const schoolModel = mongoose.Schema(
 			],
 		},
 		contact: {
-			type: Number,
+			type: String,
 			// required: [true, 'Contact is Required'],
 			minLength: [10, 'Constact must not be exceed of 10 Numbers'],
 			maxLength: [10, 'Constact must be atleast of 10 Numbers'],
