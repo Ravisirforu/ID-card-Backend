@@ -952,6 +952,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       logo: school.logo,
       code: school.code,
       requiredFields: school.requiredFields,
+      requiredFieldsStaff: school.requiredFieldsStaff,
       createdAt: school.createdAt,
 
       // Add other school properties as needed.
