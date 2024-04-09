@@ -1767,6 +1767,7 @@ exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
   const school = await Student.findById(studentId);
 
   const files = req.files;
+  console.log(files)
   const students = await Promise.all(files.map(async (file) => {
     const fileName = path.parse(file.originalname).name;
     console.log(fileName);
