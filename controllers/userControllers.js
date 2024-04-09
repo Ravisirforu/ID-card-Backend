@@ -14,6 +14,7 @@ const student = require("../models/studentModel");
 const generateTokens = require("../utils/generateTokens");
 const moment = require("moment");
 const path = require("path");
+const Staff = require("../models/staffModel")
 // const generateTokens = require("../utils/generateTokens");
 // // const cloudinary = require("cloudinary").v2;
 
@@ -380,7 +381,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
 
   const user = await User.findById(id);
 
-  let { name, email, contact, password, requiredFields } = req.body;
+  let { name, email, contact, password, requiredFields,requiredFieldsStaff } = req.body;
 
   if (!name) return next(new errorHandler("School name is Required"));
 
@@ -403,10 +404,22 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
     }
   }
 
+  if (typeof requiredFieldsStaff === "string") {
+    try {
+      requiredFieldsStaff = JSON.parse(`[${requiredFieldsStaff}]`);
+    } catch (error) {
+      // If JSON.parse fails, split the string by commas and manually remove quotes
+      requiredFieldsStaff = requiredFieldsStaff
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+
   // Transform requiredFields array into array of objects
   // const requiredFieldsObjects = requiredFields.map(field => ({ [field]: true }));
 
   currSchool.requiredFields = requiredFields;
+  currSchool.requiredFieldsStaff = requiredFieldsStaff;
   await currSchool.save();
 
   console.log(user);
@@ -537,7 +550,7 @@ exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
 
 exports.addStudent = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  const file = req.files[0];
+  const file = req.files[0] || null;
 
   const user = await User.findById(id);
 
@@ -696,6 +709,168 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
   });
 });
 
+exports.addStaff = catchAsyncErron(async (req, res, next) => {
+  const id = req.id;
+  const file = req.files[0];
+
+  const user = await User.findById(id);
+  console.log(user)
+
+  const schoolID = req.params.id;
+  const currSchool = await School.findById(schoolID);
+
+  if (!currSchool) return next(new errorHandler("invalidate School ID"));
+
+  const { name, fatherName } = req.body;
+
+  console.log(req.body);
+  if (!name) return next(new errorHandler("name is Required"));
+
+  let currStaff = {
+    name,
+  };
+
+  if (req.body.fatherName) {
+    currStaff.fatherName = req.body.fatherName;
+  }
+
+  if (req.body.husbandName) {
+    currStaff.husbandName = req.body.husbandName;
+  }
+  if (req.body.dob) {
+    currStaff.dob = req.body.dob;
+  }
+  if (req.body.contact) {
+    currStaff.contact = req.body.contact;
+  }
+  if (req.body.email) {
+    currStaff.email = req.body.email;
+  }
+  if (req.body.address) {
+    currStaff.address = req.body.address;
+  }
+  if (req.body.qualification) {
+    currStaff.qualification = req.body.qualification;
+  }
+  if (req.body.designation) {
+    currStaff.designation = req.body.designation;
+  }
+  if (req.body.staffType) {
+    currStaff.staffType = req.body.staffType;
+  }
+  if (req.body.doj) {
+    currStaff.doj = req.body.doj;
+  }
+  if (req.body.uid) {
+    currStaff.uid = req.body.uid;
+  }
+  if (req.body.staffID) {
+    currStaff.staffID = req.body.staffID;
+  }
+  if (req.body.udiseCode) {
+    currStaff.udiseCode = req.body.udiseCode;
+  }
+  if (req.body.schoolName) {
+    currStaff.schoolName = req.body.schoolName;
+  }
+  if (req.body.bloodGroup) {
+    currStaff.bloodGroup = req.body.bloodGroup;
+  }
+  if (req.body.dispatchNo) {
+    currStaff.dispatchNo = req.body.dispatchNo;
+  }
+  if (req.body.dateOfissue) {
+    currStaff.dateOfissue = req.body.dateOfissue;
+  }
+  if (req.body.ihrmsNo) {
+    currStaff.ihrmsNo = req.body.ihrmsNo;
+  }
+  if (req.body.beltNo) {
+    currStaff.beltNo = req.body.beltNo;
+  }
+
+  const staff = await Staff.create(currStaff);
+  // if(req.body.avatar){
+
+  // }
+
+  staff.school = currSchool._id;
+  staff.user = id;
+
+  if (file) {
+    const fileUri = getDataUri(file);
+
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    console.log(myavatar);
+
+    staff.avatar = {
+      publicId: myavatar.public_id,
+      url: myavatar.url,
+    };
+  }
+  staff.save();
+
+  res.status(200).json({
+    succcess: true,
+    message: "successfully Register",
+    user: user,
+    staff: staff,
+  });
+});
+
+exports.editStaff = catchAsyncErron(async (req, res, next) => {
+
+  const staffId = req.params.id;
+  console.log(staffId);
+  const updates = req.body; // The updates from the request body.
+
+  const updatedStudent = await Staff.findByIdAndUpdate(staffId, updates, {
+    new: true,
+  });
+
+  const file = req.files[0];
+
+  if (file) {
+    const currStudent = await Staff.findById(staffId);
+    if (currStudent.avatar.publicId !== "") {
+      await cloudinary.v2.uploader.destroy(
+        currStudent.avatar.publicId,
+        (error, result) => {
+          if (error) {
+            console.error("Error deleting file from Cloudinary:", error);
+          } else {
+            console.log("File deleted successfully:", result);
+          }
+        }
+      );
+    }
+
+    const fileUri = getDataUri(file);
+    const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    currStudent.avatar = {
+      publicId: myavatar.public_id,
+      url: myavatar.url,
+    };
+    currStudent.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Student updated successfully",
+      student: currStudent,
+    });
+  }
+
+  // Respond with the updated student information.
+  res.status(200).json({
+    success: true,
+    message: "Student updated successfully",
+    student: updatedStudent,
+  });
+});
+
+
 exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
   const studentId = req.params.id;
@@ -825,6 +1000,37 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
   });
 });
 
+exports.getAllStaffInSchool = catchAsyncErron(async (req, res, next) => {
+  const schoolId = req.params.id; // School ID from request params
+  const status = req.query.status; // State from query parameters
+  console.log("eneter")
+
+  let queryObj = { school: schoolId };
+  if (status) {
+    queryObj.status = status; // Assuming your student schema has a 'state' field
+  }
+
+  // Find all staff in the given school using the school ID
+  const staff = await Staff.find(queryObj);
+  console.log(staff)
+
+
+  if (!staff || staff.length === 0) {
+    // If no staff are found for the given school, return an appropriate response
+    return res.status(404).json({
+      success: false,
+      message: "No staff found for the provided school ID",
+    });
+  }
+
+  // Respond with the list of staff found in the school
+  res.status(200).json({
+    success: true,
+    message: "Students found for the provided school ID",
+    staff: staff,
+  });
+});
+
 // ---------------------StatusReaduToPrint----------------
 
 exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
@@ -932,52 +1138,6 @@ exports.updateStudentStatusToPending = catchAsyncErron(
 
 // ---------------------StatusPrint------------
 
-// exports.deleteManyStudents = catchAsyncErron(async (req, res, next) => {
-//   const schoolID = req.params.id
-//   let {studentIds } = req.body; // Assuming both are passed in the request body
-
-//   if (typeof studentIds === 'string') {
-//     try {
-//       studentIds = JSON.parse(`[${studentIds}]`);
-//     } catch (error) {
-//       // If JSON.parse fails, split the string by commas and manually remove quotes
-//       studentIds = studentIds.split(',').map(id => id.trim().replace(/^"|"$/g, ''));
-//     }
-//   }
-
-//   // Validate inputs (schoolId and studentIds)
-//   if (!schoolID || !studentIds ) {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Invalid request. Please provide a school ID and a list of student IDs."
-//     });
-//   }
-
-//   // Update status of students
-//   const updated = await Student.updateMany(
-//     {
-//       _id: { $in: studentIds }, // Filter documents by student IDs
-//       school: schoolID // Ensure the students belong to the specified school
-//     },
-//     {
-//       $set: { status: "Printed" } // Set the status to "Ready to print"
-//     }
-//   );
-
-//   // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
-//   if (updated.matchedCount === 0) {
-//     return res.status(404).json({
-//       success: false,
-//       message: "No matching students found for the provided IDs and school ID."
-//     });
-//   }
-
-//   res.status(200).json({
-//     success: true,
-//     message: `${updated.modifiedCount} students' status updated to "Printed"`,
-//   });
-// });
-
 exports.updateStudentStatusToPrinted = catchAsyncErron(
   async (req, res, next) => {
     const schoolID = req.params.id;
@@ -1071,6 +1231,214 @@ exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: `${deletionResult.deletedCount} students deleted successfully.`,
+  });
+});
+
+
+
+
+
+
+// ---------------------StatusReaduToPrint Staff----------------
+
+exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+  let { staffIds } = req.body; // Assuming both are passed in the request body
+
+  if (typeof staffIds === "string") {
+    try {
+      staffIds = JSON.parse(`[${staffIds}]`);
+    } catch (error) {
+      // If JSON.parse fails, split the string by commas and manually remove quotes
+      staffIds = staffIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+
+  // Validate inputs (schoolId and studentIds)
+  if (!schoolID || !staffIds) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Invalid request. Please provide a school ID and a list of student IDs.",
+    });
+  }
+
+  // Update status of students
+  const updated = await Staff.updateMany(
+    {
+      _id: { $in: staffIds }, // Filter documents by student IDs
+      school: schoolID, // Ensure the students belong to the specified school
+    },
+    {
+      $set: { status: "Ready to print" }, // Set the status to "Ready to print"
+    }
+  );
+
+  // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
+  if (updated.matchedCount === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No matching students found for the provided IDs and school ID.",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `${updated.modifiedCount} students' status updated to "Ready to print"`,
+  });
+});
+
+// ---------------------StatusPending  Staff------------
+
+exports.updateStaffStatusToPending = catchAsyncErron(
+  async (req, res, next) => {
+    const schoolID = req.params.id;
+    let { staffIds } = req.body; // Assuming both are passed in the request body
+
+    if (typeof staffIds === "string") {
+      try {
+        staffIds = JSON.parse(`[${staffIds}]`);
+      } catch (error) {
+        // If JSON.parse fails, split the string by commas and manually remove quotes
+        staffIds = staffIds
+          .split(",")
+          .map((id) => id.trim().replace(/^"|"$/g, ""));
+      }
+    }
+
+    // Validate inputs (schoolId and staffIds)
+    if (!schoolID || !staffIds) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid request. Please provide a school ID and a list of Staff IDs.",
+      });
+    }
+
+    // Update status of students
+    const updated = await Staff.updateMany(
+      {
+        _id: { $in: staffIds }, // Filter documents by student IDs
+        school: schoolID, // Ensure the students belong to the specified school
+      },
+      {
+        $set: { status: "Panding" }, // Set the status to "Ready to print"
+      }
+    );
+
+    // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
+    if (updated.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No matching staff found for the provided IDs and school ID.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updated.modifiedCount} staff' status updated to "Panding"`,
+    });
+  }
+);
+
+// ---------------------StatusPrint  Staff------------
+
+exports.updateStaffStatusToPrinted = catchAsyncErron(
+  async (req, res, next) => {
+    const schoolID = req.params.id;
+    let { staffIds } = req.body; // Assuming both are passed in the request body
+
+    if (typeof staffIds === "string") {
+      try {
+        staffIds = JSON.parse(`[${staffIds}]`);
+      } catch (error) {
+        // If JSON.parse fails, split the string by commas and manually remove quotes
+        staffIds = staffIds
+          .split(",")
+          .map((id) => id.trim().replace(/^"|"$/g, ""));
+      }
+    }
+
+    // Validate inputs (schoolId and staffIds)
+    if (!schoolID || !staffIds) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid request. Please provide a school ID and a list of staff IDs.",
+      });
+    }
+
+    // Update status of students
+    const updated = await Staff.updateMany(
+      {
+        _id: { $in: staffIds }, // Filter documents by student IDs
+        school: schoolID, // Ensure the students belong to the specified school
+      },
+      {
+        $set: { status: "Printed" }, // Set the status to "Ready to print"
+      }
+    );
+
+    // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
+    if (updated.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No matching Staff found for the provided IDs and school ID.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updated.modifiedCount} Staff' status updated to "Printed"`,
+    });
+  }
+);
+
+exports.deleteStaff = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+  let { staffIds } = req.body;
+
+  // Check if studentIds is a string; if so, try to convert it to an array
+  if (typeof staffIds === "string") {
+    try {
+      staffIds = JSON.parse(`[${staffIds}]`);
+    } catch (error) {
+      staffIds = staffIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+
+  // Validate inputs
+  if (!schoolID || !Array.isArray(staffIds) || staffIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Invalid request. Please provide a school ID and a list of student IDs.",
+    });
+  }
+
+  // Delete students
+  const deletionResult = await Staff.deleteMany({
+    _id: { $in: staffIds },
+    school: schoolID,
+  });
+
+  // Check if the deletion was successful
+  if (deletionResult.deletedCount === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No matching staff found for the provided IDs and school ID.",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `${deletionResult.deletedCount} staff deleted successfully.`,
   });
 });
 
@@ -1438,5 +1806,54 @@ exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
     success: true,
     message: "send photos",
     students
+  });
+});
+
+
+exports.StaffAvatars = catchAsyncErron(async (req, res, next) => {
+  const studentId = req.params.id;
+
+  // const school = await Student.findById(studentId);
+
+  const files = req.files;
+  const staffs = await Promise.all(files.map(async (file) => {
+    const fileName = path.parse(file.originalname).name;
+    console.log(fileName);
+    const currStaff = await Staff.findOne({
+      school: studentId,
+      photoName: fileName,
+    });
+    console.log(currStaff);
+    if (currStaff) {
+      if (currStaff.avatar.publicId !== "") {
+        await cloudinary.v2.uploader.destroy(
+          currStaff.avatar.publicId,
+          (error, result) => {
+            if (error) {
+              console.error("Error deleting file from Cloudinary:", error);
+            } else {
+              console.log("File deleted successfully:", result);
+            }
+          }
+        );
+      }
+      const fileUri = getDataUri(file);
+      const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
+
+      currStaff.avatar = {
+        publicId: myavatar.public_id,
+        url: myavatar.url,
+      };
+      await currStaff.save();
+      console.log(currStaff)
+      return currStaff;
+    }
+  }));
+  console.log(staffs)
+  // Respond with the updated student information.
+  res.status(200).json({
+    success: true,
+    message: "send photos",
+    staffs
   });
 });

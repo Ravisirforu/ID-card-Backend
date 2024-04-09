@@ -49,6 +49,7 @@ const Student = require("./models/studentModel.js");
 const School = require("./models/schoolModel.js");
 const upload = require("./middlewares/multer.js");
 const isAuthenticated = require("./middlewares/auth.js");
+const Staff = require("./models/staffModel.js");
 
 //routed
 app.get("/", (req, res) => {
@@ -403,6 +404,99 @@ app.post(
       success: true,
       message: `${insertedStudents.length} students inserted successfully.`,
       data: insertedStudents,
+    });
+  }
+);
+
+app.post(
+  "/upload-excel/staff/:id",
+  upload,
+  isAuthenticated,
+  async (req, res) => {
+    const file = req.files[0];
+
+    if (!file) {
+      return res.status(400).send("No file uploaded.");
+    }
+    const files = req.files[0].path;
+
+    const schoolID = req.params.id;
+    const school = await School.findById(schoolID);
+
+    const rows = await readXlsxFile(req.files[0].buffer);
+
+    if (rows.length < 2) {
+      return res.status(400).send("Excel file does not contain data.");
+    }
+
+    const [headers, ...dataRows] = rows;
+    console.log(rows);
+    const newheader = headers.map((headers) => headers.toUpperCase());
+    console.log(newheader);
+
+    const columnIndex = {
+      name: newheader.indexOf('NAME'),
+      fatherName: newheader.indexOf('FATHER NAME'),
+      husbandName: newheader.indexOf('HUSBAND NAME'),
+      qualification: newheader.indexOf('QUALIFICATION'),
+      doj: newheader.indexOf('DATE OF JOINING'),
+      contact: newheader.indexOf("CONTACT NO."),
+      address: newheader.indexOf("ADDRESS"),
+      dob: newheader.indexOf("DATE OF BIRTH"),
+      staffID: newheader.indexOf('STAFF ID'),
+      schoolName: newheader.indexOf('SCHOOL/OFFICE NAME'),
+      dispatchNo: newheader.indexOf('DISPATCH NO.',),
+      ihrmsNo: newheader.indexOf('IHRMS NO.'),
+      designation: newheader.indexOf('DESIGNATION'),
+      uid: newheader.indexOf('UID'),
+      email: newheader.indexOf('EMAIL ID'),
+      udiseCode: newheader.indexOf('UDISE CODE'),
+      bloodGroup: newheader.indexOf('BLOOD GROUP'),
+      beltNo: newheader.indexOf('BELT NO.'),
+      dateOfissue: newheader.indexOf('DATE OF ISSUE'),
+      photoName: newheader.indexOf("PHOTO NO."),
+    };
+
+    if (columnIndex.dob === -1) {
+      columnIndex.dob = newheader.indexOf("DOB");
+    }
+    if (columnIndex.contact === -1) {
+      columnIndex.contact = newheader.indexOf("CONTACT NO");
+    }
+    if (columnIndex.routeNo === -1) {
+      columnIndex.routeNo = newheader.indexOf("ROLL NO");
+    }
+
+    // Map each row to student data object
+    const staffData = await dataRows.map((row) => ({
+      name: row[columnIndex.name],
+      fatherName: row[columnIndex.fatherName],
+      husbandName: row[columnIndex.husbandName],
+      qualification: row[columnIndex.qualification],
+      doj: row[columnIndex.doj],
+      contact: row[columnIndex.contact],
+      address: row[columnIndex.address],
+      dob: row[columnIndex.dob],
+      staffID: row[columnIndex.staffID],
+      schoolName: row[columnIndex.schoolName],
+      dispatchNo: row[columnIndex.dispatchNo],
+      ihrmsNo: row[columnIndex.ihrmsNo],
+      designation: row[columnIndex.designation],
+      uid: row[columnIndex.uid],
+      udiseCode: row[columnIndex.udiseCode],
+      bloodGroup: row[columnIndex.bloodGroup],
+      dateOfissue: row[columnIndex.dateOfissue],
+      photoName:row[columnIndex.photoName],
+      school: schoolID,
+    }));
+
+    console.log(staffData)
+
+    const insertedStaff = await Staff.insertMany(staffData);
+    res.status(200).json({
+      success: true,
+      message: `${insertedStaff.length} students inserted successfully.`,
+      data: staffData,
     });
   }
 );

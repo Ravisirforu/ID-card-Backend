@@ -26,7 +26,15 @@ const { ExcelUpload,
     userForgetPasswordsendMail,
     SchoolrequiredFields,
     userProfile,
-    StudentsAvatars} = require("../controllers/userControllers");
+    StudentsAvatars,
+    addStaff,
+    editStaff,
+    updateStaffStatusToPrint,
+    updateStaffStatusToPending,
+    updateStaffStatusToPrinted,
+    deleteStaff,
+    StaffAvatars,
+    getAllStaffInSchool} = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
 
@@ -73,13 +81,23 @@ router.post("/delete/school/:id", isAuthenticated ,deleteSchool);
 
 router.post("/students/:id", isAuthenticated ,getAllStudentsInSchool);
 
+router.post("/staffs/:id", isAuthenticated ,getAllStaffInSchool);
+
 router.post("/registration/student/:id", upload, isAuthenticated ,addStudent);
+
+router.post("/registration/staff/:id", upload, isAuthenticated ,addStaff);
 
 router.post("/edit/student/:id", upload, isAuthenticated ,editStudent);
 
+router.post("/edit/staff/:id", upload, isAuthenticated ,editStaff);
+
 router.post("/student/avatars/:id", upload, isAuthenticated , StudentsAvatars);
 
+router.post("/staff/avatars/:id", upload, isAuthenticated , StaffAvatars);
+
 router.post("/delete/student/:id", isAuthenticated ,deleteStudent);
+
+router.post("/delete/staff/:id", isAuthenticated ,deleteStudent);
 
 router.post("/school/search", isAuthenticated ,SerchSchool);
 
@@ -89,7 +107,15 @@ router.post("/student/change-status/pending/:id", isAuthenticated ,updateStudent
 
 router.post("/student/change-status/printed/:id", isAuthenticated ,updateStudentStatusToPrinted);
 
+router.post("/staff/change-status/readyto/:id", isAuthenticated ,updateStaffStatusToPrint);
+
+router.post("/staff/change-status/pending/:id", isAuthenticated ,updateStaffStatusToPending);
+
+router.post("/staff/change-status/Printed/:id", isAuthenticated ,updateStaffStatusToPrinted);
+
 router.post("/students/delete/:id", isAuthenticated ,deleteStudents);
+
+router.post("/staffs/delete/:id", isAuthenticated ,deleteStaff);
 
 router.post("/studentlist/excel/:id", isAuthenticated ,studentListExcel);
 

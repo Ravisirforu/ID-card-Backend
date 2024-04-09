@@ -49,7 +49,8 @@ const schoolModel = mongoose.Schema(
 			default: true
 		},
 		user: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
-		requiredFields:[]
+		requiredFields:[],
+		requiredFieldsStaff:[],
 		
 
 	},
